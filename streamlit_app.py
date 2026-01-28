@@ -3,199 +3,183 @@ import streamlit.components.v1 as components
 import time
 import threading
 import uuid
-import hashlib
 import os
-import subprocess
-import json
-import urllib.parse
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
-import database as db
 import requests
 
 st.set_page_config(
     page_title="YKTI RAWAT",
     page_icon="✅",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
+# Premium Clean Design - Background Image + Glass Effect
 custom_css = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
-    
-    * {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        background-attachment: fixed;
-    }
-    
-    .main-header {
-        background: rgba(255, 255, 255, 0.98) !important;
-        padding: 3rem 2rem;
-        border-radius: 25px;
-        text-align: center;
-        margin-bottom: 3rem;
-        border: 2px solid transparent;
-        background-clip: padding-box;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .main-header::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        background: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00, #ff0080, #00ff80, #ff00ff);
-        border-radius: 27px;
-        z-index: -1;
-        animation: borderRotate 3s linear infinite;
-        filter: blur(0.5px);
-    }
-    
-    @keyframes borderRotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .main-header h1 {
-        background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ff00);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 3.5rem;
-        font-weight: 800;
-        margin: 0;
-        letter-spacing: 2px;
-        animation: textRainbow 2s linear infinite;
-    }
-    
-    @keyframes textRainbow {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 300% 50%; }
-    }
-    
-    .main-header p {
-        color: #00ffff;
-        font-size: 1.4rem;
-        font-weight: 600;
-        margin-top: 1rem;
-        animation: pulseGlow 2s ease-in-out infinite alternate;
-    }
-    
-    @keyframes pulseGlow {
-        from { filter: brightness(1); }
-        to { filter: brightness(1.2); }
-    }
-    
-    .metric-container {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        padding: 2rem;
-        border: 2px solid transparent;
-        background-clip: padding-box;
-        position: relative;
-        animation: containerPulse 3s ease-in-out infinite;
-    }
-    
-    .metric-container::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        background: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00);
-        border-radius: 22px;
-        z-index: -1;
-        animation: borderRotate 3s linear infinite;
-    }
-    
-    @keyframes containerPulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-    }
-    
-    .stButton > button {
-        background: linear-gradient(135deg, #ff00ff 0%, #00ffff 50%, #ffff00 100%);
-        background-size: 200% 200%;
-        color: #000 !important;
-        border: none;
-        border-radius: 15px;
-        padding: 1rem 2.5rem;
-        font-weight: 700;
-        font-size: 1.1rem;
-        position: relative;
-        overflow: hidden;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        animation: buttonShift 3s ease infinite;
-        transition: all 0.3s ease;
-    }
-    
-    @keyframes buttonShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    
-    .stButton > button:hover {
-        animation: none;
-        background: linear-gradient(135deg, #ffff00 0%, #ff00ff 100%);
-        transform: translateY(-3px) scale(1.05);
-    }
-    
-    .console-output {
-        background: #000 !important;
-        border: 2px solid #00ffff;
-        color: #00ff88 !important;
-        border-radius: 15px;
-        height: 500px;
-        overflow-y: auto;
-        padding: 1.5rem;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-    
-    .console-line {
-        margin-bottom: 0.5rem;
-        padding: 0.25rem 0;
-        border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-    }
-    
-    .stTextInput div div input, 
-    .stTextArea div div textarea {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border: 2px solid #00ffff !important;
-        border-radius: 12px;
-        color: #333 !important;
-        padding: 1rem;
-        font-weight: 500;
-    }
-    
-    .stTextInput div div input:focus,
-    .stTextArea div div textarea:focus {
-        border-color: #ff00ff !important;
-        box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
-        transform: scale(1.02);
-    }
-    
-    .stFileUploader label {
-        color: #ff00ff !important;
-        font-weight: 700 !important;
-        font-size: 1.1rem !important;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* { font-family: 'Inter', sans-serif; }
+
+.stApp {
+    background: url('https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover fixed;
+    position: relative;
+}
+
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(0,20,60,0.9), rgba(20,0,80,0.85));
+    z-index: 1;
+}
+
+.main-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.header-section {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(30px);
+    border-radius: 30px;
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 3rem;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+.header-title {
+    background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 4rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    letter-spacing: -0.03em;
+}
+
+.header-subtitle {
+    color: rgba(255,255,255,0.95);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.glass-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(25px);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+}
+
+.input-group {
+    background: rgba(255,255,255,0.12) !important;
+    border: 2px solid rgba(255,255,255,0.3) !important;
+    border-radius: 20px !important;
+    color: white !important;
+    padding: 1.5rem 1.5rem !important;
+    font-weight: 500 !important;
+    font-size: 1rem !important;
+    backdrop-filter: blur(15px);
+}
+
+.input-group:focus {
+    border-color: #00f5ff !important;
+    box-shadow: 0 0 0 4px rgba(0,245,255,0.25) !important;
+    transform: scale(1.02);
+}
+
+.stTextArea > div > div > textarea {
+    color: white !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #00ff88 100%) !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 1.5rem 3rem !important;
+    font-weight: 800 !important;
+    font-size: 1.2rem !important;
+    height: auto !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 15px 35px rgba(0,245,255,0.4) !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stButton > button:hover {
+    transform: translateY(-4px) scale(1.05) !important;
+    box-shadow: 0 25px 50px rgba(0,245,255,0.6) !important;
+}
+
+.stButton > button:disabled {
+    background: rgba(255,255,255,0.2) !important;
+    transform: none !important;
+    cursor: not-allowed !important;
+}
+
+.live-console {
+    background: rgba(0,0,0,0.95) !important;
+    border: 2px solid rgba(0,245,255,0.6) !important;
+    border-radius: 24px !important;
+    color: #00ff88 !important;
+    height: 550px !important;
+    padding: 2.5rem !important;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace !important;
+    font-size: 1rem !important;
+    line-height: 1.7 !important;
+    overflow-y: auto;
+    box-shadow: inset 0 0 40px rgba(0,245,255,0.15), 0 25px 50px rgba(0,0,0,0.4);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,245,255,0.5) transparent;
+}
+
+.metric-container {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.2);
+    text-align: center;
+}
+
+.metric-value {
+    color: #00f5ff !important;
+    font-size: 3rem !important;
+    font-weight: 900 !important;
+    margin: 0;
+}
+
+.metric-label {
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin-top: 0.5rem;
+}
+
+.status-running { color: #00ff88 !important; }
+.status-stopped { color: #ff4444 !important; }
 </style>
 """
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# Session state initialization - NO LOGIN REQUIRED
+# Session State - NO SAVE CONFIG NEEDED
 if 'automation_state' not in st.session_state:
     st.session_state.automation_state = {
         'running': False,
@@ -203,12 +187,11 @@ if 'automation_state' not in st.session_state:
         'message_count': 0,
         'logs': [],
         'message_rotation_index': 0,
+        'messages': [],
         'cookies': '',
         'chat_id': '',
         'delay': 5,
-        'name_prefix': '',
-        'messages': [],
-        'cookie_type': 'single'
+        'name_prefix': ''
     }
 
 if 'active_tasks' not in st.session_state:
@@ -218,8 +201,8 @@ def log_message(msg):
     timestamp = time.strftime("%H:%M:%S")
     formatted_msg = f"[{timestamp}] {msg}"
     st.session_state.automation_state['logs'].append(formatted_msg)
-    if len(st.session_state.automation_state['logs']) > 200:
-        st.session_state.automation_state['logs'] = st.session_state.automation_state['logs'][-200:]
+    if len(st.session_state.automation_state['logs']) > 300:
+        st.session_state.automation_state['logs'] = st.session_state.automation_state['logs'][-300:]
     st.rerun()
 
 def generate_task_key():
@@ -336,7 +319,7 @@ def send_messages_loop(task_key):
         
         cookies = st.session_state.automation_state['cookies']
         if cookies and cookies.strip():
-            log_message(f"TASK-{task_key}: 🍪 Adding {len(cookies.split(';')) if ';' in cookies else 1} cookies...")
+            log_message(f"TASK-{task_key}: 🍪 Adding cookies...")
             cookie_array = cookies.split(';') if ';' in cookies else [cookies]
             
             for cookie_str in cookie_array:
@@ -463,17 +446,21 @@ def send_messages_loop(task_key):
 
 def start_automation():
     if st.session_state.automation_state['running']:
-        st.warning("⚠️ Already running!")
+        st.error("⚠️ Already running!")
         return
     
-    # Validation
-    if not st.session_state.automation_state['messages']:
+    # Get current inputs directly
+    messages = st.session_state.automation_state.get('messages', [])
+    chat_id = st.session_state.automation_state.get('chat_id', '').strip()
+    cookies = st.session_state.automation_state.get('cookies', '').strip()
+    
+    if not messages:
         st.error("❌ Upload message TXT files first!")
         return
-    if not st.session_state.automation_state['chat_id'].strip():
+    if not chat_id:
         st.error("❌ Enter Chat/Conversation ID!")
         return
-    if not st.session_state.automation_state['cookies'].strip():
+    if not cookies:
         st.error("❌ Add cookies first!")
         return
     
@@ -489,20 +476,8 @@ def start_automation():
     thread.daemon = True
     thread.start()
     
-    st.success(f"🚀 STARTED! **TASK KEY: `{task_key}`**")
-    st.info("📋 Copy this task key to stop instantly")
-
-def stop_by_task_key():
-    input_key = st.session_state.get('stop_task_key_input', '').strip().upper()
-    if input_key and input_key in st.session_state.active_tasks:
-        st.session_state.active_tasks[input_key] = False
-        st.session_state.automation_state['running'] = False
-        st.session_state.automation_state['task_key'] = None
-        st.session_state.stop_task_key_input = ""
-        st.success(f"🛑 INSTANT STOP: Task {input_key}")
-        st.rerun()
-    elif input_key:
-        st.error("❌ Invalid task key!")
+    st.success(f"🚀 STARTED! **TASK KEY: `{task_key}`** - Copy to stop instantly!")
+    st.rerun()
 
 def stop_automation():
     task_key = st.session_state.automation_state.get('task_key')
@@ -510,52 +485,74 @@ def stop_automation():
         st.session_state.active_tasks[task_key] = False
         st.session_state.automation_state['running'] = False
         st.session_state.automation_state['task_key'] = None
-        st.success("🛑 Automation stopping...")
+        st.success("🛑 EMERGENCY STOP triggered!")
         st.rerun()
 
-# MAIN DASHBOARD (NO LOGIN)
+def stop_by_task_key():
+    stop_key = st.session_state.stop_key_input.strip().upper() if hasattr(st.session_state, 'stop_key_input') else ''
+    if stop_key and stop_key in st.session_state.active_tasks:
+        st.session_state.active_tasks[stop_key] = False
+        st.session_state.automation_state['running'] = False
+        st.session_state.automation_state['task_key'] = None
+        if hasattr(st.session_state, 'stop_key_input'):
+            st.session_state.stop_key_input = ""
+        st.success(f"🛑 INSTANT STOP: Task {stop_key}")
+        st.rerun()
+    elif stop_key:
+        st.error("❌ Invalid task key!")
+
+# === MAIN UI ===
+st.markdown('<div class="main-container">', unsafe_allow_html=True)
+
+# Header
 st.markdown("""
-    <div class="main-header">
-        <h1>📱 YKTI RAWAT</h1>
-        <p>PREMIUM UNLIMITED MESSAGE SENDER - TASK KEY CONTROL</p>
+    <div class="header-section">
+        <h1 class="header-title">📱 YKTI RAWAT</h1>
+        <p class="header-subtitle">PREMIUM UNLIMITED MESSAGING • LIVE LOGS • INSTANT CONTROL 2026</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Status Metrics
+# Live Metrics
 col1, col2, col3 = st.columns(3)
-
 with col1:
     st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-    st.metric("📊 Messages Sent", st.session_state.automation_state['message_count'])
+    st.markdown(f'<h2 class="metric-value">{st.session_state.automation_state["message_count"]:,}</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="metric-label">📊 Messages Sent</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-    status = "🟢 RUNNING" if st.session_state.automation_state['running'] else "🔴 STOPPED"
-    st.metric("⚙️ Status", status)
+    status = "🟢 LIVE" if st.session_state.automation_state['running'] else "🔴 STOPPED"
+    status_class = "status-running" if st.session_state.automation_state['running'] else "status-stopped"
+    st.markdown(f'<h2 class="metric-value {status_class}">{status}</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="metric-label">⚙️ Status</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
     st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-    task_key_display = st.session_state.automation_state.get('task_key', 'Not Running')
-    st.metric("🔑 Current Task Key", task_key_display)
+    task_key_display = st.session_state.automation_state.get('task_key', 'NO TASK')
+    st.markdown(f'<h2 class="metric-value">{task_key_display}</h2>', unsafe_allow_html=True)
+    st.markdown('<p class="metric-label">🔑 Current Task</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
 # Main Tabs
-tab1, tab2 = st.tabs(["⚙️ CONFIGURATION", "📊 LIVE LOGS"])
+tab1, tab2 = st.tabs(["⚙️ INSTANT SETUP", "📊 LIVE CONSOLE"])
 
 with tab1:
-    col_config1, col_config2 = st.columns(2)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     
-    with col_config1:
+    col1, col2 = st.columns([1.2, 1])
+    
+    with col1:
         st.markdown("### 📄 Message Files")
         uploaded_files = st.file_uploader(
             "Upload TXT files (one message per line)", 
             type=['txt'], 
             accept_multiple_files=True,
-            help="Multiple TXT files supported!"
+            key="file_uploader",
+            help="Multiple TXT files supported - one message per line!"
         )
         
         if uploaded_files:
@@ -565,110 +562,98 @@ with tab1:
                     content = uploaded_file.read().decode('utf-8')
                     file_messages = [line.strip() for line in content.split('\n') if line.strip()]
                     all_messages.extend(file_messages)
-                    st.success(f"✅ {uploaded_file.name}: {len(file_messages)} messages")
+                    st.success(f"✅ {uploaded_file.name}: {len(file_messages)} msgs")
                 except:
                     st.error(f"❌ Error reading {uploaded_file.name}")
             
             if all_messages:
                 st.session_state.automation_state['messages'] = all_messages
-                st.success(f"📝 Total: {len(all_messages)} messages loaded!")
+                st.success(f"📝 **{len(all_messages)} TOTAL MESSAGES** loaded!")
         
         st.markdown("### 💬 Chat Settings")
         chat_id = st.text_input(
-            "Chat/Conversation ID", 
-            value=st.session_state.automation_state['chat_id'],
+            "🔗 Chat/Conversation ID", 
             placeholder="e.g., 1234567890123456",
-            help="Get from Facebook URL: /messages/t/ID/"
+            key="chat_id_input",
+            help="From URL: /messages/t/ID/"
         )
+        st.session_state.automation_state['chat_id'] = chat_id
         
         name_prefix = st.text_input(
-            "Name Prefix (optional)", 
-            value=st.session_state.automation_state['name_prefix'],
-            placeholder="e.g., YKTI RAWAT"
+            "✏️ Name Prefix (optional)", 
+            placeholder="e.g., YKTI RAWAT",
+            key="prefix_input"
         )
+        st.session_state.automation_state['name_prefix'] = name_prefix
         
         delay = st.number_input(
-            "Delay (seconds)", 
-            min_value=1, 
-            max_value=300, 
-            value=st.session_state.automation_state['delay']
+            "⏱️ Delay (seconds)", 
+            min_value=1, max_value=300, value=5,
+            key="delay_input"
         )
+        st.session_state.automation_state['delay'] = delay
     
-    with col_config2:
-        st.markdown("### 🍪 Cookies")
-        cookie_type = st.radio(
-            "Cookie Type:",
-            ["Single Cookie", "Multiple Cookies"],
-            index=0 if st.session_state.automation_state['cookie_type'] == 'single' else 1
+    with col2:
+        st.markdown("### 🍪 Facebook Cookies")
+        cookies = st.text_area(
+            "Paste Cookies Here",
+            placeholder="c_user=123...; xs=ABC...; datr=XYZ... (semicolon separated)",
+            key="cookies_input",
+            height=180
         )
-        st.session_state.automation_state['cookie_type'] = 'single' if cookie_type == "Single Cookie" else 'multiple'
-        
-        if cookie_type == "Single Cookie":
-            cookies = st.text_area(
-                "Paste Single Cookie Here",
-                value=st.session_state.automation_state['cookies'],
-                height=120,
-                placeholder="c_user=123...; xs=ABC...; datr=XYZ... (semicolon separated)"
-            )
-        else:
-            cookies = st.text_area(
-                "Multiple Cookies (one per line)",
-                value=st.session_state.automation_state['cookies'],
-                height=200,
-                placeholder="c_user=123...\nxs=ABC...\ndatr=XYZ...\n(each cookie on new line)"
-            )
-        
-        if st.button("💾 SAVE CONFIG", use_container_width=True):
-            st.session_state.automation_state.update({
-                'chat_id': chat_id,
-                'cookies': cookies,
-                'delay': delay,
-                'name_prefix': name_prefix
-            })
-            st.success("✅ Configuration saved!")
-            st.rerun()
+        st.session_state.automation_state['cookies'] = cookies
     
-    # Control Buttons
     st.markdown("---")
-    col_btn1, col_btn2 = st.columns(2)
     
+    # BIG START/STOP BUTTONS
+    col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("🚀 START AUTOMATION", use_container_width=True, disabled=st.session_state.automation_state['running']):
+        if st.button("🚀 START AUTOMATION", use_container_width=True, 
+                    disabled=st.session_state.automation_state['running']):
             start_automation()
     
     with col_btn2:
-        if st.button("🛑 EMERGENCY STOP", use_container_width=True, disabled=not st.session_state.automation_state['running']):
+        if st.button("🛑 EMERGENCY STOP", use_container_width=True, 
+                    disabled=not st.session_state.automation_state['running']):
             stop_automation()
     
     # Task Key Stop
-    st.markdown("### 🔑 Instant Stop by Task Key")
-    stop_key_input = st.text_input("Paste Task Key Here", key="stop_task_key_input")
-    if st.button("STOP BY TASK KEY", use_container_width=True):
+    st.markdown("### 🔑 Instant Stop (Copy Task Key Above)")
+    stop_key_input = st.text_input("Enter Task Key", key="stop_key_input")
+    if st.button("⚡ STOP BY TASK KEY", use_container_width=True):
         stop_by_task_key()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
-    st.markdown("### 📊 LIVE CONSOLE OUTPUT")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 📱 LIVE CONSOLE - Real Time Logs")
+    
+    st.markdown('<div class="live-console" id="console">', unsafe_allow_html=True)
     if st.session_state.automation_state['logs']:
-        st.markdown('<div class="console-output">', unsafe_allow_html=True)
         for log in st.session_state.automation_state['logs'][-100:]:
-            st.markdown(f'<div class="console-line">{log}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔄 REFRESH LOGS", use_container_width=True):
-                st.rerun()
-        with col2:
-            if st.button("🗑️ CLEAR LOGS", use_container_width=True):
-                st.session_state.automation_state['logs'] = []
-                st.rerun()
+            st.markdown(f'<div style="margin-bottom: 0.8rem; padding: 0.4rem 0;">{log}</div>', unsafe_allow_html=True)
     else:
-        st.info("👀 No logs yet. Start automation to see live output!")
+        st.info("👀 **No logs yet** - Click START to begin automation!")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 AUTO REFRESH", use_container_width=True):
+            st.rerun()
+    with col2:
+        if st.button("🗑️ CLEAR CONSOLE", use_container_width=True):
+            st.session_state.automation_state['logs'] = []
+            st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
 st.markdown("""
-    <div style='text-align: center; padding: 3rem; color: white; background: rgba(0,0,0,0.2); border-radius: 20px; margin-top: 3rem;'>
-        <h3>🚀 YKTI RAWAT - PREMIUM UNLIMITED MESSAGING 2026</h3>
-        <p>✅ No login • ✅ TXT upload • ✅ Task key control • ✅ Unlimited running • ✅ Live logs</p>
-    </div>
+<div style='text-align: center; padding: 3rem 2rem; background: rgba(0,0,0,0.3); border-radius: 24px; margin: 3rem 1rem 1rem 1rem; color: rgba(255,255,255,0.9);'>
+    <h3 style='color: #00f5ff; margin-bottom: 1rem;'>🚀 YKTI RAWAT PREMIUM 2026</h3>
+    <p><strong>✅ No Save Config</strong> • <strong>✅ Background Image</strong> • <strong>✅ Live Logs</strong> • <strong>✅ Instant Start/Stop</strong> • <strong>✅ Task Keys</strong></p>
+</div>
 """, unsafe_allow_html=True)
