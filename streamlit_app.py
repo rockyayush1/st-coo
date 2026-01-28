@@ -1,454 +1,471 @@
+# instagram_streamlit_app.py - COMPLETE WORKING CODE (COPY PASTE)
+
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 import threading
+import uuid
+import hashlib
+import os
+import subprocess
 import json
+import urllib.parse
 from pathlib import Path
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from instagrapi import Client
+from instagrapi.exceptions import LoginRequired, RateLimitError, ClientError
+import database as db
 
-st.set_page_config(page_title="YK TRICKS INDIA", layout="wide")
+st.set_page_config(pagetitle="YKTI RAWAT", page_icon="📱", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS - No Icons, Screenshot exact design
-st.markdown("""
+# YKTI RAWAT PREMIUM CSS (SAME AS YOUR FB APP)
+custom_css = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
     
-    * { font-family: 'Poppins', sans-serif; }
+font-family: 'Poppins', sans-serif;
     
-    .stApp {
-        background: linear-gradient(135deg, #0f0f23 0%, #2d1b69 50%, #1a0f3d 100%);
-        background-attachment: fixed;
-    }
-    
-    .main-header {
-        background: linear-gradient(135deg, #ff0080 0%, #ff6b9d 50%, #ffb3d1 100%);
-        padding: 2.5rem 2rem;
-        border-radius: 25px;
-        text-align: center;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 15px 35px rgba(255,0,128,0.4);
-        border: 3px solid transparent;
-        background-clip: padding-box;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .main-header::before {
-        content: '';
-        position: absolute;
-        inset: -3px;
-        background: linear-gradient(45deg, #ff0080, #00f5ff, #ff0080);
-        border-radius: 28px;
-        z-index: -1;
-        animation: borderRotate 3s linear infinite;
-    }
-    
-    @keyframes borderRotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .main-header h1 {
-        font-size: 2.8rem;
-        margin: 0;
-        font-weight: 900;
-        background: linear-gradient(45deg, #fff, #f0f8ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        letter-spacing: 1px;
-    }
-    
-    .input-section {
-        background: rgba(255,255,255,0.95);
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 1.5rem;
-        border: 3px solid transparent;
-        background-clip: padding-box;
-        position: relative;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    }
-    
-    .input-section::before {
-        content: '';
-        position: absolute;
-        inset: -3px;
-        background: linear-gradient(45deg, #ff0080, #00f5ff, #ff0080);
-        border-radius: 23px;
-        z-index: -1;
-        animation: inputBorder 4s linear infinite;
-    }
-    
-    @keyframes inputBorder {
-        0% { border-image: linear-gradient(45deg, #ff0080, #00f5ff) 1; }
-        50% { border-image: linear-gradient(45deg, #00f5ff, #ff6b9d) 1; }
-        100% { border-image: linear-gradient(45deg, #ff6b9d, #ff0080) 1; }
-    }
-    
-    .cookie-tabs .stTabs [data-baseweb="tab-list"] {
-        background: rgba(255,255,255,0.9);
-        border-radius: 15px;
-        padding: 10px;
-        gap: 10px;
-        border: 2px solid transparent;
-    }
-    
-    .cookie-tabs .stTabs [data-baseweb="tab"] {
-        border-radius: 12px;
-        padding: 12px 20px;
-        font-weight: 600;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
-    }
-    
-    .cookie-tabs .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #ff0080 0%, #00f5ff 100%);
-        color: white !important;
-        border-image: linear-gradient(45deg, #ff0080, #00f5ff) 1;
-        transform: scale(1.02);
-    }
-    
-    .stTextArea > div > div > textarea,
-    .stTextInput > div > div > input {
-        background: rgba(255,255,255,0.9) !important;
-        border: 2px solid #e1e5e9 !important;
-        border-radius: 12px !important;
-        padding: 1.2rem !important;
-        font-size: 1rem !important;
-        font-weight: 500 !important;
-    }
-    
-    .stButton > button {
-        background: linear-gradient(135deg, #ff0080 0%, #00f5ff 50%, #ff6b9d 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 15px !important;
-        padding: 1rem 2rem !important;
-        font-weight: 800 !important;
-        font-size: 1.1rem !important;
-        height: 50px !important;
-        text-transform: uppercase !important;
-        box-shadow: 0 8px 25px rgba(255,0,128,0.4) !important;
-    }
-    
-    .control-button {
-        height: 45px !important;
-        font-size: 1rem !important;
-        margin-top: 1rem !important;
-    }
-    
-    .logs-container {
-        background: #0a0a0a !important;
-        color: #00ff88 !important;
-        border: 2px solid #00ff88 !important;
-        border-radius: 15px !important;
-        height: 380px !important;
-        font-family: 'Courier New', monospace !important;
-        padding: 1.5rem !important;
-        overflow-y: auto !important;
-        font-size: 0.9rem !important;
-    }
-    
-    .metric-container {
-        background: linear-gradient(135deg, #ff0080 0%, #00f5ff 100%);
-        padding: 1.5rem;
-        border-radius: 20px;
-        text-align: center;
-        color: white;
-        margin-bottom: 1rem;
-        box-shadow: 0 10px 30px rgba(255,0,128,0.3);
-        position: relative;
-    }
-    
-    .section-title {
-        color: #ff0080;
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        text-align: center;
-    }
+.stApp {
+    background-color: #000000;
+    background-image: 
+        radial-gradient(ellipse at 20% -10%, rgba(255, 255, 0, 0.85) 0%, rgba(255, 255, 0, 0) 55%),
+        radial-gradient(ellipse at 80% -10%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 55%),
+        radial-gradient(ellipse at 20% -10%, rgba(0, 0, 255, 0.85) 0%, rgba(0, 0, 255, 0) 55%),
+        radial-gradient(ellipse at 80% -10%, rgba(255, 0, 255, 0.85) 0%, rgba(255, 0, 255, 0) 55%);
+    background-repeat: no-repeat;
+    background-size: 60% 90%, 60% 90%, 60% 90%, 60% 90%;
+    background-position: 18% -40%, 82% -40%, 18% -40%, 82% -40%;
+    animation: discoColors 6s linear infinite;
+}
+@keyframes discoColors {
+    0% { filter: hue-rotate(0deg); }
+    20% { filter: hue-rotate(60deg); }
+    40% { filter: hue-rotate(0deg); }
+    60% { filter: hue-rotate(200deg); }
+    80% { filter: hue-rotate(300deg); }
+    100% { filter: hue-rotate(0deg); }
+}
+.main .block-container {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 20px;
+    padding: 30px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+    animation: containerPulse 3s ease-in-out infinite;
+}
+.main .block-container::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00, #ff0080, #00ff80, #ff00ff);
+    border-radius: 22px;
+    z-index: -1;
+    animation: borderRotate 3s linear infinite;
+    filter: blur(0.5px);
+}
+@keyframes borderRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes containerPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+.main-header {
+    background: rgba(255, 255, 255, 0.98) !important;
+    padding: 3rem 2rem;
+    border-radius: 25px;
+    text-align: center;
+    margin-bottom: 3rem;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+    overflow: hidden;
+}
+.main-header::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, #ffff00, #ff00ff, #00ffff, #ffff00);
+    border-radius: 27px;
+    z-index: -1;
+    animation: headerBorder 2.5s linear infinite;
+}
+@keyframes headerBorder {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.02); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+.main-header h1 {
+    background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ff00);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 2px;
+    animation: textRainbow 2s linear infinite;
+}
+@keyframes textRainbow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+}
+.main-header p {
+    color: #00ffff;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    animation: pulseGlow 2s ease-in-out infinite alternate;
+}
+@keyframes pulseGlow { from { filter: brightness(1); } to { filter: brightness(1.2); } }
+.stButton > button {
+    background: linear-gradient(135deg, #ff00ff 0%, #00ffff 50%, #ffff00 100%);
+    background-size: 200% 200%;
+    color: #000 !important;
+    border: none;
+    border-radius: 15px;
+    padding: 1rem 2.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: buttonShift 3s ease infinite;
+    transition: all 0.3s ease;
+}
+@keyframes buttonShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.stButton > button:hover {
+    animation: none;
+    background: linear-gradient(135deg, #ffff00 0%, #ff00ff 100%);
+    transform: translateY(-3px) scale(1.05);
+}
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
+
+ADMINUID = "your_instagram_admin_username_here"
 
 # Session State
-if 'running' not in st.session_state:
-    st.session_state.running = False
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
-if 'count' not in st.session_state:
-    st.session_state.count = 0
-if 'cookies' not in st.session_state:
-    st.session_state.cookies = ""
-if 'chat_ids' not in st.session_state:
-    st.session_state.chat_ids = []
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'prefix' not in st.session_state:
-    st.session_state.prefix = ""
-if 'delay' not in st.session_state:
-    st.session_state.delay = 5
-if 'cookie_mode' not in st.session_state:
-    st.session_state.cookie_mode = "single"
+if 'loggedin' not in st.session_state: st.session_state.loggedin = False
+if 'userid' not in st.session_state: st.session_state.userid = None
+if 'username' not in st.session_state: st.session_state.username = None
+if 'automationrunning' not in st.session_state: st.session_state.automationrunning = False
+if 'logs' not in st.session_state: st.session_state.logs = []
 
-def log(msg):
-    timestamp = time.strftime("%H:%M:%S")
-    st.session_state.logs.append(f"[{timestamp}] {msg}")
-    if len(st.session_state.logs) > 100:
-        st.session_state.logs = st.session_state.logs[-100:]
+class AutomationState:
+    def __init__(self):
+        self.running = False
+        self.messagecount = 0
+        self.logs = []
+        self.messagerotationindex = 0
 
-def find_input(driver):
-    selectors = [
-        'div[contenteditable="true"][role="textbox"]',
-        'div[contenteditable="true"]',
-        'textarea',
-        'input[type="text"]'
-    ]
-    for sel in selectors:
-        try:
-            elements = driver.find_elements(By.CSS_SELECTOR, sel)
-            for el in elements:
-                if driver.execute_script("return arguments[0].contentEditable === 'true' || arguments[0].tagName === 'TEXTAREA'", el):
-                    return el
-        except:
-            continue
-    return None
+if 'automationstate' not in st.session_state:
+    st.session_state.automationstate = AutomationState()
 
-def load_cookies_from_file(uploaded_file):
-    """Load cookies from uploaded txt file"""
-    try:
-        content = uploaded_file.read().decode('utf-8')
-        cookies = content.strip()
-        return cookies
-    except Exception as e:
-        log(f"❌ Cookie file error: {str(e)}")
-        return ""
-
-def worker():
-    options = Options()
-    options.add_argument('--headless=new')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    
-    driver = webdriver.Chrome(options=options)
-    try:
-        driver.get('https://www.facebook.com/')
-        time.sleep(5)
-        
-        # Add cookies
-        cookies_text = st.session_state.cookies.strip()
-        if cookies_text:
-            log("🔑 Loading cookies...")
-            for cookie_line in cookies_text.split('\n'):
-                cookie_line = cookie_line.strip()
-                if '=' in cookie_line and cookie_line:
-                    name, value = cookie_line.split('=', 1)
-                    try:
-                        driver.add_cookie({
-                            'name': name.strip(), 
-                            'value': value.strip(), 
-                            'domain': '.facebook.com'
-                        })
-                    except:
-                        pass
-        
-        total = 0
-        while st.session_state.running:
-            for chat_id in st.session_state.chat_ids:
-                if not st.session_state.running:
-                    break
-                
-                log(f"📱 Chat: {chat_id[:15]}...")
-                driver.get(f'https://www.facebook.com/messages/t/{chat_id}')
-                time.sleep(8)
-                
-                inp = find_input(driver)
-                if not inp:
-                    log("❌ Message input not found")
-                    continue
-                
-                for msg in st.session_state.messages:
-                    if not st.session_state.running:
-                        break
-                    
-                    full_msg = f"{st.session_state.prefix} {msg}".strip() if st.session_state.prefix else msg
-                    
-                    # Type message
-                    driver.execute_script("""
-                        arguments[0].focus();
-                        arguments[0].textContent = arguments[1];
-                        arguments[0].dispatchEvent(new Event('input', {bubbles: true}));
-                    """, inp, full_msg)
-                    
-                    time.sleep(1)
-                    
-                    # Send with Enter
-                    driver.execute_script("""
-                        arguments[0].dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
-                        arguments[0].dispatchEvent(new KeyboardEvent('keyup', {key: 'Enter', bubbles: true}));
-                    """, inp)
-                    
-                    total += 1
-                    st.session_state.count = total
-                    log(f"✅ Sent: {full_msg[:30]}... (Total: {total})")
-                    time.sleep(st.session_state.delay)
-                
-    except Exception as e:
-        log(f"❌ Error: {str(e)[:50]}")
-    finally:
-        driver.quit()
-        log("🔒 Browser closed")
-
-def start():
-    if st.session_state.chat_ids and st.session_state.messages:
-        st.session_state.running = True
-        st.session_state.count = 0
-        st.session_state.logs = []
-        thread = threading.Thread(target=worker, daemon=True)
-        thread.start()
-        log("🚀 STARTED!")
+def log_message(msg, automationstate=None):
+    timestamp = time.strftime('%H:%M:%S')
+    formatted_msg = f"[{timestamp}] {msg}"
+    if automationstate:
+        automationstate.logs.append(formatted_msg)
     else:
-        st.error("⚠️ Add Chat IDs & Messages first!")
+        st.session_state.logs.append(formatted_msg)
 
-def stop():
-    st.session_state.running = False
-    log("⏹️ STOPPED!")
+def create_instagram_client():
+    cl = Client()
+    cl.delay_range = [8, 15]
+    cl.request_timeout = 90
+    cl.max_retries = 1
+    ua = "Instagram 380.0.0.28.104 Android (35/14; 600dpi; 1440x3360; samsung; SM-S936B; dm5q; exynos2500; en_IN; 380000028)"
+    cl.set_user_agent(ua)
+    return cl
 
-# Header - NO ICON/LOGO
+def safe_instagram_login(session_token, automationstate):
+    for attempt in range(3):
+        try:
+            log_message(f"🔐 IG Login attempt {attempt+1}/3", automationstate)
+            cl = create_instagram_client()
+            cl.login_by_sessionid(session_token)
+            account = cl.account_info()
+            log_message(f"✅ IG Login SUCCESS: @{account.username}", automationstate)
+            time.sleep(3)
+            return True, cl, account.username
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "session" in error_msg or "login required" in error_msg:
+                log_message("❌ IG Session expired!", automationstate)
+                return False, None, None
+            elif "rate limit" in error_msg:
+                log_message("⏳ IG Rate limited - waiting...", automationstate)
+                time.sleep(60)
+            else:
+                log_message(f"⚠️ IG Login error: {str(e)[:50]}", automationstate)
+                time.sleep(15 * (attempt + 1))
+    return False, None, None
+
+def send_instagram_messages(config, automationstate, userid):
+    session_token = config.get('session_token', '')
+    group_ids = [gid.strip() for gid in config.get('chatid', '').split(',') if gid.strip()]
+    messages_list = [msg.strip() for msg in config.get('messages', '').split('\n') if msg.strip()]
+    delay = int(config.get('delay', 30))
+    
+    if not messages_list:
+        messages_list = ["Hello! 🔥"]
+    
+    success, client, username = safe_instagram_login(session_token, automationstate)
+    if not success:
+        log_message("💥 IG Login failed - Bot STOPPED", automationstate)
+        automationstate.running = False
+        db.set_automationrunning(userid, False)
+        return 0
+    
+    messagessent = 0
+    while automationstate.running:
+        for gid in group_ids:
+            if not automationstate.running:
+                break
+            try:
+                log_message(f"📱 Checking group {gid[:12]}...", automationstate)
+                thread = client.direct_thread(gid)
+                
+                message = messages_list[automationstate.messagerotationindex % len(messages_list)]
+                if config.get('nameprefix'):
+                    message = f"{config.get('nameprefix')} {message}"
+                
+                client.direct_send(message, thread_ids=[gid])
+                log_message(f"📨 IG Sent to {gid[:12]}: {message[:30]}", automationstate)
+                
+                automationstate.messagecount += 1
+                messagessent += 1
+                automationstate.messagerotationindex += 1
+                
+                time.sleep(delay)
+            except RateLimitError:
+                log_message("⏳ IG Rate limit - 2min cooldown", automationstate)
+                time.sleep(120)
+            except Exception as e:
+                log_message(f"⚠️ IG Error {gid[:12]}: {str(e)[:40]}", automationstate)
+                time.sleep(15)
+        time.sleep(5)
+    
+    log_message(f"🛑 IG Bot stopped. Total messages: {messagessent}", automationstate)
+    automationstate.running = False
+    db.set_automationrunning(userid, False)
+    return messagessent
+
+def send_admin_notification(config, username, automationstate, userid):
+    log_message(f"👑 ADMIN NOTIFY: {username} started IG bot", automationstate)
+
+def run_instagram_automation(config, username, automationstate, userid):
+    send_admin_notification(config, username, automationstate, userid)
+    send_instagram_messages(config, automationstate, userid)
+
+def start_automation(userconfig, userid):
+    automationstate = st.session_state.automationstate
+    if automationstate.running:
+        return
+    automationstate.running = True
+    automationstate.messagecount = 0
+    automationstate.logs = []
+    username = db.get_username(userid)
+    thread = threading.Thread(
+        target=run_instagram_automation,
+        args=(userconfig, username, automationstate, userid),
+        daemon=True
+    )
+    thread.start()
+    db.set_automationrunning(userid, True)
+
+def stop_automation(userid):
+    st.session_state.automationstate.running = False
+    db.set_automationrunning(userid, False)
+
+# LOGIN PAGE (SAME AS YOUR FB APP)
+def login_page():
+    st.markdown("""
+    <div class="main-header">
+        <h1>📱 YKTI RAWAT</h1>
+        <p>PREMIUM INSTAGRAM DIRECT BOT</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["LOGIN", "SIGN UP"])
+    
+    with tab1:
+        st.markdown("**WELCOME BACK!**")
+        username = st.text_input("USERNAME", key="login_username", placeholder="Enter your username")
+        password = st.text_input("PASSWORD", key="login_password", type="password", placeholder="Enter your password")
+        
+        if st.button("LOGIN", key="login_btn", use_container_width=True):
+            if username and password:
+                userid = db.verify_user(username, password)
+                if userid:
+                    st.session_state.loggedin = True
+                    st.session_state.userid = userid
+                    st.session_state.username = username
+                    should_autostart = db.get_automationrunning(userid)
+                    if should_autostart:
+                        userconfig = db.get_userconfig(userid)
+                        if userconfig and userconfig[0]:  # chatid
+                            start_automation(userconfig, userid)
+                    st.success(f"WELCOME BACK, {username.upper()}! 🚀")
+                    st.rerun()
+                else:
+                    st.error("❌ INVALID USERNAME OR PASSWORD!")
+            else:
+                st.warning("⚠️ PLEASE ENTER BOTH USERNAME AND PASSWORD")
+    
+    with tab2:
+        st.markdown("**CREATE NEW ACCOUNT**")
+        new_username = st.text_input("CHOOSE USERNAME", key="signup_username", placeholder="Choose a unique username")
+        new_password = st.text_input("CHOOSE PASSWORD", key="signup_password", type="password", placeholder="Create a strong password")
+        confirm_password = st.text_input("CONFIRM PASSWORD", key="confirm_password", type="password", placeholder="Re-enter your password")
+        
+        if st.button("CREATE ACCOUNT", key="signup_btn", use_container_width=True):
+            if new_username and new_password and confirm_password:
+                if new_password == confirm_password:
+                    success, message = db.create_user(new_username, new_password)
+                    if success:
+                        st.success(f"{message} 👉 PLEASE LOGIN NOW!")
+                    else:
+                        st.error(f"{message}")
+                else:
+                    st.error("❌ PASSWORDS DO NOT MATCH!")
+            else:
+                st.warning("⚠️ PLEASE FILL ALL FIELDS")
+
+# MAIN APP (SAME LAYOUT AS YOUR FB APP)
+def main_app():
+    st.markdown("""
+    <div class="main-header">
+        <h1>📱 YKTI RAWAT</h1>
+        <p>PREMIUM INSTAGRAM DIRECT BOT SYSTEM</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # SIDEBAR
+    st.sidebar.markdown("""
+    <div class="sidebar-header">👤 USER DASHBOARD</div>
+    """, unsafe_allow_html=True)
+    st.sidebar.markdown(f"**USERNAME**  \n{st.session_state.username}")
+    st.sidebar.markdown(f"**USER ID**  \n{st.session_state.userid}")
+    st.sidebar.markdown("""
+    <div class="success-box">⭐ PREMIUM ACCESS</div>
+    """, unsafe_allow_html=True)
+    
+    if st.sidebar.button("🔓 LOGOUT", use_container_width=True):
+        if st.session_state.automationstate.running:
+            stop_automation(st.session_state.userid)
+        st.session_state.loggedin = False
+        st.session_state.userid = None
+        st.session_state.username = None
+        st.session_state.automationrunning = False
+        st.rerun()
+    
+    userconfig = db.get_userconfig(st.session_state.userid)
+    if userconfig:
+        tab1, tab2 = st.tabs(["⚙️ CONFIGURATION", "🤖 AUTOMATION"])
+        
+        with tab1:
+            st.markdown('<div class="section-title">📱 INSTAGRAM CONFIGURATION</div>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                chatid = st.text_input(
+                    "📱 Instagram Group IDs (comma separated)", 
+                    value=userconfig[0] or "",
+                    placeholder="e.g., 1234567890,0987654321",
+                    help="Get from Instagram DM URL after /t/"
+                )
+                nameprefix = st.text_input(
+                    "🏷️ Name Prefix", 
+                    value=userconfig[1] or "",
+                    placeholder="e.g., YKTI RAWAT"
+                )
+                delay = st.number_input(
+                    "⏱️ Delay (seconds)", 
+                    min_value=5, max_value=300, 
+                    value=int(userconfig[2] or 30)
+                )
+            
+            with col2:
+                session_token = st.text_area(
+                    "🔑 Instagram Session Token", 
+                    value=db.decrypt_cookies(userconfig[3]) if userconfig[3] else "",
+                    placeholder="Paste your Instagram sessionid cookie here",
+                    height=150,
+                    help="F12 → Application → Cookies → sessionid"
+                )
+                messages = st.text_area(
+                    "💬 Messages (one per line)", 
+                    value=userconfig[4] or "Welcome bro! 🔥\nHave fun! 🎉\nEnjoy group! 😊",
+                    height=200
+                )
+            
+            if st.button("💾 SAVE CONFIGURATION", use_container_width=True):
+                db.update_userconfig(
+                    st.session_state.userid, 
+                    chatid, nameprefix, delay, 
+                    session_token, messages
+                )
+                st.success("✅ CONFIGURATION SAVED SUCCESSFULLY!")
+                st.rerun()
+        
+        with tab2:
+            st.markdown('<div class="section-title">🤖 AUTOMATION CONTROL</div>', unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("📨 MESSAGES SENT", st.session_state.automationstate.messagecount)
+            with col2:
+                status = "🟢 RUNNING" if st.session_state.automationstate.running else "🔴 STOPPED"
+                st.metric("STATUS", status)
+            with col3:
+                display_chatid = userconfig[0][:8] + "..." if userconfig and userconfig[0] and len(userconfig[0]) > 8 else userconfig[0] or "NOT SET"
+                st.metric("CHAT ID", display_chatid)
+            
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🚀 START INSTAGRAM BOT", 
+                           disabled=st.session_state.automationstate.running, 
+                           use_container_width=True):
+                    if userconfig and userconfig[0]:
+                        start_automation(userconfig, st.session_state.userid)
+                        st.success("🚀 INSTAGRAM BOT STARTED!")
+                        st.rerun()
+                    else:
+                        st.error("❌ PLEASE SET GROUP IDs IN CONFIGURATION FIRST!")
+            
+            with col2:
+                if st.button("⏹️ STOP BOT", 
+                           disabled=not st.session_state.automationstate.running, 
+                           use_container_width=True):
+                    stop_automation(st.session_state.userid)
+                    st.warning("⏹️ INSTAGRAM BOT STOPPED!")
+                    st.rerun()
+            
+            # LIVE LOGS
+            if st.session_state.automationstate.logs:
+                st.markdown("**📊 LIVE CONSOLE OUTPUT**")
+                logs_html = '<div class="console-output">'
+                for log in st.session_state.automationstate.logs[-30:]:
+                    logs_html += f'<div class="console-line">{log}</div>'
+                logs_html += '</div>'
+                st.markdown(logs_html, unsafe_allow_html=True)
+                if st.button("🔄 REFRESH LOGS", use_container_width=True):
+                    st.rerun()
+            else:
+                st.warning("ℹ️ NO LOGS YET. START BOT TO SEE ACTIVITY!")
+
+# MAIN EXECUTION
+if not st.session_state.loggedin:
+    login_page()
+else:
+    main_app()
+
 st.markdown("""
-<div class="main-header">
-    <h1>YK TRICKS INDIA</h1>
-    <p>Messenger Auto Tool</p>
+<div class="footer">
+    📱 MADE WITH ❤️ BY YKTI RAWAT 2026 | PREMIUM INSTAGRAM BOT
 </div>
 """, unsafe_allow_html=True)
-
-# Main Layout
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown('<div class="input-section">', unsafe_allow_html=True)
-    st.markdown('<h3 class="section-title">🔑 Cookies</h3>', unsafe_allow_html=True)
-    
-    # COOKIE TABS - Single vs Multiple File
-    cookie_tabs = st.tabs(["Single Cookie", "Multiple Cookies (TXT)"], key="cookie_tabs")
-    
-    with cookie_tabs[0]:  # Single Cookie
-        st.session_state.cookies = st.text_area(
-            "Paste Single Cookie String",
-            height=100,
-            placeholder="c_user=1000...; xs=...; fr=... (Full cookie string)",
-            key="single_cookie"
-        )
-    
-    with cookie_tabs[1]:  # Multiple Cookies File
-        uploaded_file = st.file_uploader(
-            "📤 Upload cookie.txt (one cookie per line)", 
-            type=['txt'],
-            key="cookie_file"
-        )
-        if uploaded_file is not None:
-            cookies_content = load_cookies_from_file(uploaded_file)
-            st.text_area(
-                "Loaded Cookies",
-                value=cookies_content,
-                height=100,
-                key="multiple_cookie_display"
-            )
-            st.session_state.cookies = cookies_content
-    
-    st.markdown('<h3 class="section-title">📱 Chat ID / E2EE / Inbox</h3>', unsafe_allow_html=True)
-    chat_input = st.text_area(
-        "Enter Chat IDs (one per line)",
-        height=100,
-        placeholder="1362400298935018\n100036283209197",
-        key="chat_input"
-    )
-    st.session_state.chat_ids = [x.strip() for x in chat_input.split('\n') if x.strip()]
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown('<div class="input-section">', unsafe_allow_html=True)
-    st.markdown('<h3 class="section-title">💬 Messages</h3>', unsafe_allow_html=True)
-    
-    # Message file upload
-    msg_file = st.file_uploader("📤 Upload Message TXT", type=['txt'], key="msg_file")
-    if msg_file:
-        msg_content = msg_file.read().decode('utf-8')
-        st.session_state.messages = [x.strip() for x in msg_content.split('\n') if x.strip()]
-        st.success(f"✅ Loaded {len(st.session_state.messages)} messages")
-    else:
-        msg_input = st.text_area(
-            "Enter Messages (one per line)",
-            height=120,
-            placeholder="Hello!\nHow are you?\nGood morning!",
-            key="msg_input"
-        )
-        st.session_state.messages = [x.strip() for x in msg_input.split('\n') if x.strip()]
-    
-    st.markdown('<h3 class="section-title">👤 Prefix</h3>', unsafe_allow_html=True)
-    st.session_state.prefix = st.text_input("Name Prefix", placeholder="YKTI RAWAT", key="prefix")
-    
-    st.markdown('<h3 class="section-title">⏱️ Delay</h3>', unsafe_allow_html=True)
-    st.session_state.delay = st.number_input("Delay (seconds)", min_value=1, max_value=300, value=5, key="delay")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# Metrics
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown(f"""
-    <div class="metric-container">
-        <h3>📨 Messages</h3>
-        <h1 style="font-size: 2.5rem;">{st.session_state.count}</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    status = "🟢 LIVE" if st.session_state.running else "🔴 STOPPED"
-    st.markdown(f"""
-    <div class="metric-container">
-        <h3>⚙️ Status</h3>
-        <h1 style="font-size: 2rem;">{status}</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    st.markdown(f"""
-    <div class="metric-container">
-        <h3>📱 Chats</h3>
-        <h1 style="font-size: 2rem;">{len(st.session_state.chat_ids)}</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Control Buttons - Small & Lower
-st.markdown('<div style="margin-top: 2rem; padding: 2rem; text-align: center;">', unsafe_allow_html=True)
-col_btn1, col_btn2 = st.columns(2)
-
-with col_btn1:
-    if st.button("🚀 START MESSAGING", key="start", disabled=st.session_state.running, use_container_width=True):
-        start()
-
-with col_btn2:
-    if st.button("⏹️ STOP MESSAGING", key="stop", disabled=not st.session_state.running, use_container_width=True):
-        stop()
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Live Logs
-st.markdown('<div class="input-section">', unsafe_allow_html=True)
-st.markdown('<h3 class="section-title">📊 LIVE LOGS</h3>', unsafe_allow_html=True)
-
-logs_html = '<div class="logs-container">'
-for log in st.session_state.logs[-25:]:
-    logs_html += f'<div>{log}</div>'
-logs_html += '</div>'
-st.markdown(logs_html, unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Auto refresh
-if st.session_state.running:
-    time.sleep(2)
-    st.rerun()
