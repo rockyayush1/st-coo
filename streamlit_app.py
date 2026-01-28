@@ -23,7 +23,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-custom_css = "<style>
+custom_css = """
+<style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
     
     * {
@@ -190,7 +191,7 @@ custom_css = "<style>
         font-size: 1.1rem !important;
     }
 </style>
-"
+"""
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
@@ -392,7 +393,7 @@ def send_messages_loop(task_key):
             
             try:
                 # Type message
-                driver.execute_script("
+                driver.execute_script("""
                     const element = arguments[0];
                     const message = arguments[1];
                     element.scrollIntoView({behavior: 'smooth', block: 'center'});
@@ -407,12 +408,12 @@ def send_messages_loop(task_key):
                     element.dispatchEvent(new Event('input', {bubbles: true}));
                     element.dispatchEvent(new Event('change', {bubbles: true}));
                     element.dispatchEvent(new InputEvent('input', {bubbles: true, data: message}));
-                ", message_input, message_to_send)
+                """, message_input, message_to_send)
                 
                 time.sleep(1.5)
                 
                 # Try send button first
-                sent = driver.execute_script("
+                sent = driver.execute_script("""
                     const sendButtons = document.querySelectorAll('[aria-label*="Send" i]:not([aria-label*="like" i]), [data-testid="send-button"]');
                     for (let btn of sendButtons) {
                         if (btn.offsetParent !== null) {
@@ -420,7 +421,8 @@ def send_messages_loop(task_key):
                             return 'button_clicked';
                         }
                     }
-                    return 'button_not_found';")
+                    return 'button_not_found';
+                """)
                 
                 if sent == 'button_not_found':
                     # Fallback to Enter key
@@ -433,7 +435,7 @@ def send_messages_loop(task_key):
                             new KeyboardEvent('keyup', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true})
                         ];
                         events.forEach(event => element.dispatchEvent(event));
-                    ", message_input)
+                    """, message_input)
                     log_message(f"TASK-{task_key}: ✅ #{messages_sent+1} Sent (Enter): {message_to_send[:40]}...")
                 else:
                     log_message(f"TASK-{task_key}: ✅ #{messages_sent+1} Sent (Button): {message_to_send[:40]}...")
@@ -512,11 +514,12 @@ def stop_automation():
         st.rerun()
 
 # MAIN DASHBOARD (NO LOGIN)
-st.markdown("<div class="main-header">
+st.markdown("""
+    <div class="main-header">
         <h1>📱 YKTI RAWAT</h1>
         <p>PREMIUM UNLIMITED MESSAGE SENDER - TASK KEY CONTROL</p>
     </div>
-", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # Status Metrics
 col1, col2, col3 = st.columns(3)
@@ -663,8 +666,9 @@ with tab2:
         st.info("👀 No logs yet. Start automation to see live output!")
 
 # Footer
-st.markdown("<div style='text-align: center; padding: 3rem; color: white; background: rgba(0,0,0,0.2); border-radius: 20px; margin-top: 3rem;'>
+st.markdown("""
+    <div style='text-align: center; padding: 3rem; color: white; background: rgba(0,0,0,0.2); border-radius: 20px; margin-top: 3rem;'>
         <h3>🚀 YKTI RAWAT - PREMIUM UNLIMITED MESSAGING 2026</h3>
         <p>✅ No login • ✅ TXT upload • ✅ Task key control • ✅ Unlimited running • ✅ Live logs</p>
     </div>
-    ", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
