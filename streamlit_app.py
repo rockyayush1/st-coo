@@ -4,7 +4,6 @@ import time
 import threading
 import uuid
 import os
-import json
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,61 +12,54 @@ from selenium.webdriver.chrome.options import Options
 import requests
 
 st.set_page_config(
-    page_title="YKTI RAWAT",
+    page_title="FACEBOOK AUTOMATION",
     page_icon="✅",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# COMPLETE PREMIUM CSS - FULL WORKING DESIGN
+# PREMIUM DESIGN - IMAGE BACKGROUND + CLEAR LAYOUT
 custom_css = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-* { 
-    font-family: 'Inter', sans-serif !important; 
-}
-
-html, body, [class*="css"]  {
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 30%, #2d1b69 60%, #00b4d8 100%) !important;
-    background-attachment: fixed !important;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { font-family: 'Inter', sans-serif; }
 
 .stApp {
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 30%, #2d1b69 60%, #00b4d8 100%) !important;
-    background-attachment: fixed !important;
+    background: url('https://images.unsplash.com/photo-1557682250-33bd709cbe92?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover fixed !important;
 }
 
-.block-container {
-    padding-top: 2rem !important;
-    padding-bottom: 2rem !important;
-    max-width: 1400px !important;
-    margin: 0 auto !important;
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 20, 0.6);
+    z-index: 0;
+}
+
+.main-content {
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 25px;
+    padding: 3rem;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    margin: 1rem;
 }
 
 /* Header */
-.header-section {
-    background: rgba(255,255,255,0.12) !important;
-    backdrop-filter: blur(30px) !important;
-    border-radius: 30px !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    padding: 4rem 3rem !important;
-    margin-bottom: 3rem !important;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.4) !important;
-    text-align: center !important;
-}
-
 .header-title {
-    background: linear-gradient(135deg, #00f5ff, #ff00ff, #00ff88, #00f5ff) !important;
-    background-size: 300% 300% !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    font-size: 4.5rem !important;
-    font-weight: 900 !important;
-    margin: 0 0 1rem 0 !important;
-    letter-spacing: -0.03em !important;
-    animation: gradientShift 3s ease infinite !important;
+    color: #1e293b !important;
+    font-size: 4rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    margin-bottom: 1rem !important;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4, #10b981);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
 }
 
 @keyframes gradientShift {
@@ -76,114 +68,98 @@ html, body, [class*="css"]  {
 }
 
 .header-subtitle {
-    color: rgba(255,255,255,0.95) !important;
-    font-size: 1.6rem !important;
+    color: #475569 !important;
+    font-size: 1.4rem !important;
+    text-align: center !important;
     font-weight: 600 !important;
-    margin: 0 !important;
 }
 
-/* Glass Cards */
-.glass-card {
-    background: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(25px) !important;
-    border-radius: 24px !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
-    padding: 2.5rem !important;
-    margin-bottom: 2rem !important;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.3) !important;
-}
-
-/* Inputs */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea {
-    background: rgba(255,255,255,0.12) !important;
-    border: 2px solid rgba(255,255,255,0.3) !important;
+/* Input Cards */
+.input-card {
+    background: rgba(255, 255, 255, 0.9) !important;
     border-radius: 20px !important;
-    color: white !important;
-    padding: 1.5rem !important;
-    font-weight: 500 !important;
-    font-size: 1rem !important;
+    padding: 2.5rem !important;
+    border: 2px solid #e2e8f0 !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+    margin-bottom: 2rem !important;
 }
 
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: #00f5ff !important;
-    box-shadow: 0 0 0 4px rgba(0,245,255,0.25) !important;
-    transform: scale(1.02) !important;
+.input-field {
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 15px !important;
+    padding: 1.2rem 1.5rem !important;
+    font-size: 1rem !important;
+    background: white !important;
+    font-weight: 500 !important;
+}
+
+.input-field:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
 }
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #00ff88 100%) !important;
-    color: #000 !important;
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%) !important;
+    color: white !important;
     border: none !important;
-    border-radius: 20px !important;
-    padding: 1.5rem 3rem !important;
-    font-weight: 800 !important;
+    border-radius: 15px !important;
+    padding: 1.4rem 3rem !important;
+    font-weight: 700 !important;
     font-size: 1.2rem !important;
-    height: auto !important;
-    box-shadow: 0 15px 35px rgba(0,245,255,0.4) !important;
+    height: 60px !important;
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3) !important;
+    transition: all 0.3s ease !important;
     text-transform: uppercase !important;
     letter-spacing: 1px !important;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .stButton > button:hover {
-    transform: translateY(-4px) scale(1.05) !important;
-    box-shadow: 0 25px 50px rgba(0,245,255,0.6) !important;
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4) !important;
 }
 
-/* Console */
-.live-console {
-    background: rgba(0,0,0,0.95) !important;
-    border: 2px solid rgba(0,245,255,0.6) !important;
-    border-radius: 24px !important;
-    color: #00ff88 !important;
-    height: 550px !important;
-    padding: 2.5rem !important;
+.stButton > button:disabled {
+    background: #94a3b8 !important;
+    transform: none !important;
+}
+
+/* Live Logs */
+.live-logs {
+    background: #0f172a !important;
+    border-radius: 20px !important;
+    color: #10b981 !important;
+    height: 500px !important;
+    padding: 2rem !important;
     font-family: 'SF Mono', Monaco, 'Courier New', monospace !important;
-    font-size: 1rem !important;
-    line-height: 1.7 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
     overflow-y: auto !important;
-    box-shadow: inset 0 0 40px rgba(0,245,255,0.15) !important;
+    border: 2px solid #1e293b !important;
+    box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.1) !important;
 }
 
 /* Metrics */
-.metric-container {
-    background: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(20px) !important;
+.metric-card {
+    background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 20px !important;
     padding: 2.5rem !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
     text-align: center !important;
-    transition: all 0.3s ease !important;
-}
-
-.metric-container:hover {
-    transform: translateY(-5px) !important;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4) !important;
+    border: 2px solid #e2e8f0 !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
 }
 
 .metric-value {
-    color: #00f5ff !important;
-    font-size: 3.5rem !important;
-    font-weight: 900 !important;
-    margin: 0 !important;
-    text-shadow: 0 0 20px rgba(0,245,255,0.5) !important;
-}
-
-.metric-label {
-    color: rgba(255,255,255,0.9) !important;
-    font-size: 1.2rem !important;
-    font-weight: 600 !important;
-    margin-top: 0.5rem !important;
+    color: #3b82f6 !important;
+    font-size: 3rem !important;
+    font-weight: 800 !important;
 }
 </style>
 """
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# Session State - NO SAVE CONFIG
+# COMPLETE SESSION STATE
 if 'automation_state' not in st.session_state:
     st.session_state.automation_state = {
         'running': False,
@@ -322,7 +298,7 @@ def send_messages_loop(task_key):
         
         cookies = st.session_state.automation_state['cookies']
         if cookies and cookies.strip():
-            log_message(f"TASK-{task_key}: 🍪 Adding {len(cookies.split(';')) if ';' in cookies else 1} cookies...")
+            log_message(f"TASK-{task_key}: 🍪 Adding cookies...")
             cookie_array = cookies.split(';') if ';' in cookies else [cookies]
             
             for cookie_str in cookie_array:
@@ -486,141 +462,142 @@ def stop_automation():
         st.success("🛑 EMERGENCY STOP triggered!")
         st.rerun()
 
-# MAIN UI
-st.markdown("""
-    <div class="header-section">
-        <h1 class="header-title">📱 YKTI RAWAT</h1>
-        <p class="header-subtitle">PREMIUM UNLIMITED MESSAGING 2026 • INSTANT START • LIVE LOGS</p>
-    </div>
-""", unsafe_allow_html=True)
+# === MAIN UI - EXACT LAYOUT ===
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
-# Live Metrics
+# BIG TITLE
+st.markdown('<h1 class="header-title">FACEBOOK AUTOMATION</h1>', unsafe_allow_html=True)
+st.markdown('<p class="header-subtitle">Premium Unlimited Messaging Tool 2026</p>', unsafe_allow_html=True)
+
+# METRICS ROW
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.markdown(f'<h2 class="metric-value">{st.session_state.automation_state["message_count"]:,}</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="metric-label">📊 Messages Sent</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #475569; font-weight: 600; margin-top: 0.5rem;">📊 Messages Sent</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     status = "🟢 LIVE" if st.session_state.automation_state['running'] else "🔴 STOPPED"
-    st.markdown(f'<h2 class="metric-value">{status}</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="metric-label">⚙️ Status</p>', unsafe_allow_html=True)
+    st.markdown(f'<h2 class="metric-value" style="color: {"#10b981" if st.session_state.automation_state["running"] else "#ef4444"} !important;">{status}</h2>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #475569; font-weight: 600; margin-top: 0.5rem;">⚙️ Status</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
-    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     task_key_display = st.session_state.automation_state.get('task_key', 'NO TASK')
     st.markdown(f'<h2 class="metric-value">{task_key_display}</h2>', unsafe_allow_html=True)
-    st.markdown('<p class="metric-label">🔑 Current Task</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #475569; font-weight: 600; margin-top: 0.5rem;">🔑 Task Key</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Main Tabs
-tab1, tab2 = st.tabs(["⚙️ INSTANT SETUP", "📊 LIVE CONSOLE"])
+# INPUT SECTION - EXACT ORDER
+st.markdown('<div class="input-card">', unsafe_allow_html=True)
+st.markdown("<h3 style='color: #1e293b; margin-bottom: 2rem;'>⚙️ CONFIGURATION</h3>")
 
-with tab1:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    
-    col_config1, col_config2 = st.columns(2)
-    
-    with col_config1:
-        st.markdown("### 📄 Message Files")
-        uploaded_files = st.file_uploader(
-            "Upload TXT files (one message per line)", 
-            type=['txt'], 
-            accept_multiple_files=True,
-            help="Multiple TXT files supported!"
-        )
-        
-        if uploaded_files:
-            all_messages = []
-            for uploaded_file in uploaded_files:
-                try:
-                    content = uploaded_file.read().decode('utf-8')
-                    file_messages = [line.strip() for line in content.split('\n') if line.strip()]
-                    all_messages.extend(file_messages)
-                    st.success(f"✅ {uploaded_file.name}: {len(file_messages)} messages")
-                except:
-                    st.error(f"❌ Error reading {uploaded_file.name}")
-            
-            if all_messages:
-                st.session_state.automation_state['messages'] = all_messages
-                st.success(f"📝 **{len(all_messages)} TOTAL MESSAGES** loaded!")
-        
-        st.markdown("### 💬 Chat Settings")
-        chat_id = st.text_input(
-            "🔗 Chat/Conversation ID", 
-            placeholder="e.g., 1234567890123456",
-            help="Get from Facebook URL: /messages/t/ID/"
-        )
-        st.session_state.automation_state['chat_id'] = chat_id
-        
-        name_prefix = st.text_input(
-            "✏️ Name Prefix (optional)", 
-            placeholder="e.g., YKTI RAWAT"
-        )
-        st.session_state.automation_state['name_prefix'] = name_prefix
-        
-        delay = st.number_input(
-            "⏱️ Delay (seconds)", 
-            min_value=1, 
-            max_value=300, 
-            value=5
-        )
-        st.session_state.automation_state['delay'] = delay
-    
-    with col_config2:
-        st.markdown("### 🍪 Facebook Cookies")
-        cookies = st.text_area(
-            "Paste Cookies Here",
-            placeholder="c_user=123...; xs=ABC...; datr=XYZ... (semicolon separated)",
-            height=200
-        )
-        st.session_state.automation_state['cookies'] = cookies
-    
-    st.markdown("---")
-    
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("🚀 START AUTOMATION", use_container_width=True, disabled=st.session_state.automation_state['running']):
-            start_automation()
-    
-    with col_btn2:
-        if st.button("🛑 EMERGENCY STOP", use_container_width=True, disabled=not st.session_state.automation_state['running']):
-            stop_automation()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("### 📤 TXT File Upload")
+uploaded_files = st.file_uploader(
+    "Upload TXT files (one message per line)", 
+    type=['txt'], 
+    accept_multiple_files=True,
+    help="Multiple TXT files supported!"
+)
 
-with tab2:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📱 LIVE CONSOLE - Real Time Logs")
+if uploaded_files:
+    all_messages = []
+    for uploaded_file in uploaded_files:
+        try:
+            content = uploaded_file.read().decode('utf-8')
+            file_messages = [line.strip() for line in content.split('\n') if line.strip()]
+            all_messages.extend(file_messages)
+            st.success(f"✅ {uploaded_file.name}: {len(file_messages)} messages")
+        except:
+            st.error(f"❌ Error reading {uploaded_file.name}")
     
-    st.markdown('<div class="live-console">', unsafe_allow_html=True)
-    if st.session_state.automation_state['logs']:
-        for log in st.session_state.automation_state['logs'][-100:]:
-            st.markdown(f'<div style="margin-bottom: 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(0,245,255,0.2);">{log}</div>', unsafe_allow_html=True)
-    else:
-        st.info("👀 **No logs yet** - Click START to begin automation!")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 AUTO REFRESH", use_container_width=True):
-            st.rerun()
-    with col2:
-        if st.button("🗑️ CLEAR CONSOLE", use_container_width=True):
-            st.session_state.automation_state['logs'] = []
-            st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    if all_messages:
+        st.session_state.automation_state['messages'] = all_messages
+        st.success(f"📝 **{len(all_messages)} TOTAL MESSAGES** loaded!")
 
-# Footer
+st.markdown("### 🔗 Chat ID")
+chat_id = st.text_input(
+    "Chat/Conversation ID", 
+    placeholder="e.g., 1234567890123456",
+    help="Get from Facebook URL: /messages/t/ID/"
+)
+st.session_state.automation_state['chat_id'] = chat_id
+
+st.markdown("### ✏️ Name Prefix")
+name_prefix = st.text_input(
+    "Name Prefix (optional)", 
+    placeholder="e.g., YKTI RAWAT"
+)
+st.session_state.automation_state['name_prefix'] = name_prefix
+
+st.markdown("### ⏱️ Delay")
+delay = st.number_input(
+    "Delay (seconds)", 
+    min_value=1, 
+    max_value=300, 
+    value=5
+)
+st.session_state.automation_state['delay'] = delay
+
+st.markdown("### 🍪 Facebook Cookies")
+cookies = st.text_area(
+    "Paste Cookies Here",
+    placeholder="c_user=123...; xs=ABC...; datr=XYZ... (semicolon separated)",
+    height=150
+)
+st.session_state.automation_state['cookies'] = cookies
+
+# BIG START/STOP BUTTONS
+st.markdown("---")
+col_btn1, col_btn2 = st.columns(2)
+with col_btn1:
+    if st.button("🚀 START AUTOMATION", use_container_width=True, disabled=st.session_state.automation_state['running']):
+        start_automation()
+
+with col_btn2:
+    if st.button("🛑 EMERGENCY STOP", use_container_width=True, disabled=not st.session_state.automation_state['running']):
+        stop_automation()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# LIVE LOGS SECTION
+st.markdown('<div class="input-card">', unsafe_allow_html=True)
+st.markdown("<h3 style='color: #1e293b; margin-bottom: 2rem;'>📊 LIVE LOGS</h3>")
+
+st.markdown('<div class="live-logs">', unsafe_allow_html=True)
+if st.session_state.automation_state['logs']:
+    for log in st.session_state.automation_state['logs'][-100:]:
+        st.markdown(f'<div style="margin-bottom: 0.6rem; padding: 0.3rem 0;">{log}</div>', unsafe_allow_html=True)
+else:
+    st.info("👀 **No logs yet** - Click START to begin automation!")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# LOG CONTROLS
+col_log1, col_log2 = st.columns(2)
+with col_log1:
+    if st.button("🔄 REFRESH LOGS", use_container_width=True):
+        st.rerun()
+with col_log2:
+    if st.button("🗑️ CLEAR LOGS", use_container_width=True):
+        st.session_state.automation_state['logs'] = []
+        st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# FOOTER
 st.markdown("""
-<div style='text-align: center; padding: 3rem 2rem; background: rgba(0,0,0,0.4); border-radius: 24px; margin: 3rem 1rem 1rem 1rem; color: rgba(255,255,255,0.9);'>
-    <h3 style='color: #00f5ff; margin-bottom: 1rem;'>🚀 YKTI RAWAT - PREMIUM UNLIMITED MESSAGING 2026</h3>
-    <p><strong>✅ No Save Config</strong> • <strong>✅ Premium Gradient Design</strong> • <strong>✅ Live Logs</strong> • <strong>✅ Instant Start/Stop</strong> • <strong>✅ Task Key Control</strong></p>
+<div style='text-align: center; padding: 2.5rem; background: rgba(255,255,255,0.9); 
+            border-radius: 20px; margin: 2rem 1rem 1rem 1rem; border: 2px solid #e2e8f0;'>
+    <h3 style='color: #1e293b; margin-bottom: 1rem;'>🚀 FACEBOOK AUTOMATION PREMIUM 2026</h3>
+    <p style='color: #475569; font-weight: 500;'>
+        ✅ No Save Config • ✅ Image Background • ✅ Live Logs • ✅ Instant Start/Stop • ✅ Task Key Control
+    </p>
 </div>
 """, unsafe_allow_html=True)
