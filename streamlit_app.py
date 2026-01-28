@@ -1,55 +1,34 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import time
 import threading
-import uuid
-import hashlib
-import os
-import subprocess
 import json
-import urllib.parse
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
-import requests
 
-st.set_page_config(
-    page_title="YK TRICKS INDIA",
-    page_icon="✨",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="YK TRICKS INDIA", layout="wide")
 
-# Custom CSS - Exact screenshot design
-custom_css = """
+# Custom CSS - No Icons, Screenshot exact design
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
     
     * { font-family: 'Poppins', sans-serif; }
     
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
+        background: linear-gradient(135deg, #0f0f23 0%, #2d1b69 50%, #1a0f3d 100%);
         background-attachment: fixed;
     }
     
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    
     .main-header {
-        background: linear-gradient(135deg, #ff0080 0%, #00f5ff 50%, #ff6b9d 100%);
-        padding: 3rem 2rem;
+        background: linear-gradient(135deg, #ff0080 0%, #ff6b9d 50%, #ffb3d1 100%);
+        padding: 2.5rem 2rem;
         border-radius: 25px;
         text-align: center;
-        margin-bottom: 2rem;
         color: white;
-        box-shadow: 0 20px 40px rgba(255,0,128,0.4);
+        margin-bottom: 2rem;
+        box-shadow: 0 15px 35px rgba(255,0,128,0.4);
         border: 3px solid transparent;
         background-clip: padding-box;
         position: relative;
@@ -60,7 +39,7 @@ custom_css = """
         content: '';
         position: absolute;
         inset: -3px;
-        background: linear-gradient(45deg, #ff0080, #00f5ff, #ffb3d1, #ff0080);
+        background: linear-gradient(45deg, #ff0080, #00f5ff, #ff0080);
         border-radius: 28px;
         z-index: -1;
         animation: borderRotate 3s linear infinite;
@@ -72,15 +51,14 @@ custom_css = """
     }
     
     .main-header h1 {
-        font-size: 3rem;
+        font-size: 2.8rem;
         margin: 0;
         font-weight: 900;
-        background: linear-gradient(45deg, #fff, #f0f8ff, #e6f3ff);
+        background: linear-gradient(45deg, #fff, #f0f8ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        letter-spacing: 2px;
+        letter-spacing: 1px;
     }
     
     .input-section {
@@ -105,31 +83,42 @@ custom_css = """
     }
     
     @keyframes inputBorder {
-        0%, 100% { border-image: linear-gradient(45deg, #ff0080, #00f5ff) 1; }
-        25% { border-image: linear-gradient(45deg, #00f5ff, #ff6b9d) 1; }
-        50% { border-image: linear-gradient(45deg, #ff6b9d, #ffb3d1) 1; }
-        75% { border-image: linear-gradient(45deg, #ffb3d1, #ff0080) 1; }
+        0% { border-image: linear-gradient(45deg, #ff0080, #00f5ff) 1; }
+        50% { border-image: linear-gradient(45deg, #00f5ff, #ff6b9d) 1; }
+        100% { border-image: linear-gradient(45deg, #ff6b9d, #ff0080) 1; }
+    }
+    
+    .cookie-tabs .stTabs [data-baseweb="tab-list"] {
+        background: rgba(255,255,255,0.9);
+        border-radius: 15px;
+        padding: 10px;
+        gap: 10px;
+        border: 2px solid transparent;
+    }
+    
+    .cookie-tabs .stTabs [data-baseweb="tab"] {
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-weight: 600;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .cookie-tabs .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #ff0080 0%, #00f5ff 100%);
+        color: white !important;
+        border-image: linear-gradient(45deg, #ff0080, #00f5ff) 1;
+        transform: scale(1.02);
     }
     
     .stTextArea > div > div > textarea,
-    .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
-    .stFileUploader > div > div > input {
+    .stTextInput > div > div > input {
         background: rgba(255,255,255,0.9) !important;
         border: 2px solid #e1e5e9 !important;
         border-radius: 12px !important;
         padding: 1.2rem !important;
         font-size: 1rem !important;
         font-weight: 500 !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stTextArea > div > div > textarea:focus,
-    .stTextInput > div > div > input:focus {
-        border-color: #ff0080 !important;
-        box-shadow: 0 0 20px rgba(255,0,128,0.3) !important;
-        transform: scale(1.02) !important;
     }
     
     .stButton > button {
@@ -137,27 +126,17 @@ custom_css = """
         color: white !important;
         border: none !important;
         border-radius: 15px !important;
-        padding: 1.2rem 2.5rem !important;
+        padding: 1rem 2rem !important;
         font-weight: 800 !important;
-        font-size: 1.2rem !important;
-        height: 55px !important;
+        font-size: 1.1rem !important;
+        height: 50px !important;
         text-transform: uppercase !important;
-        letter-spacing: 1px !important;
         box-shadow: 0 8px 25px rgba(255,0,128,0.4) !important;
-        transition: all 0.3s ease !important;
-        position: relative;
-        overflow: hidden !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-3px) scale(1.02) !important;
-        box-shadow: 0 12px 35px rgba(255,0,128,0.6) !important;
     }
     
     .control-button {
         height: 45px !important;
         font-size: 1rem !important;
-        padding: 0.8rem 1.5rem !important;
         margin-top: 1rem !important;
     }
     
@@ -166,25 +145,11 @@ custom_css = """
         color: #00ff88 !important;
         border: 2px solid #00ff88 !important;
         border-radius: 15px !important;
-        height: 400px !important;
+        height: 380px !important;
         font-family: 'Courier New', monospace !important;
         padding: 1.5rem !important;
         overflow-y: auto !important;
         font-size: 0.9rem !important;
-        line-height: 1.4 !important;
-    }
-    
-    .logs-container::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    .logs-container::-webkit-scrollbar-track {
-        background: #1a1a1a;
-    }
-    
-    .logs-container::-webkit-scrollbar-thumb {
-        background: #00ff88;
-        border-radius: 4px;
     }
     
     .metric-container {
@@ -195,508 +160,295 @@ custom_css = """
         color: white;
         margin-bottom: 1rem;
         box-shadow: 0 10px 30px rgba(255,0,128,0.3);
-        border: 2px solid transparent;
-        background-clip: padding-box;
         position: relative;
-    }
-    
-    .metric-container::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        background: linear-gradient(45deg, #00f5ff, #ff0080);
-        border-radius: 22px;
-        z-index: -1;
     }
     
     .section-title {
         color: #ff0080;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 700;
         margin-bottom: 1rem;
         text-align: center;
     }
-    
-    .stFileUploader {
-        border: 2px dashed #ff0080 !important;
-        border-radius: 12px !important;
-        padding: 1rem !important;
-        background: rgba(255,0,128,0.1) !important;
-    }
 </style>
-"""
+""", unsafe_allow_html=True)
 
-st.markdown(custom_css, unsafe_allow_html=True)
-
-# Session State - Full original structure
-if 'automation_running' not in st.session_state:
-    st.session_state.automation_running = False
+# Session State
+if 'running' not in st.session_state:
+    st.session_state.running = False
 if 'logs' not in st.session_state:
     st.session_state.logs = []
-if 'message_count' not in st.session_state:
-    st.session_state.message_count = 0
-
+if 'count' not in st.session_state:
+    st.session_state.count = 0
 if 'cookies' not in st.session_state:
     st.session_state.cookies = ""
 if 'chat_ids' not in st.session_state:
     st.session_state.chat_ids = []
 if 'messages' not in st.session_state:
-    st.session_state.messages = ["Hello!"]
+    st.session_state.messages = []
 if 'prefix' not in st.session_state:
     st.session_state.prefix = ""
 if 'delay' not in st.session_state:
     st.session_state.delay = 5
+if 'cookie_mode' not in st.session_state:
+    st.session_state.cookie_mode = "single"
 
-class AutomationState:
-    def __init__(self):
-        self.running = False
-        self.message_count = 0
-        self.logs = []
-        self.message_rotation_index = 0
-
-if 'automation_state' not in st.session_state:
-    st.session_state.automation_state = AutomationState()
-
-def log_message(msg, automation_state=None):
-    """Enhanced logging system from original"""
+def log(msg):
     timestamp = time.strftime("%H:%M:%S")
-    formatted_msg = f"[{timestamp}] {msg}"
-    if automation_state and hasattr(automation_state, 'logs'):
-        automation_state.logs.append(formatted_msg)
-    st.session_state.logs.append(formatted_msg)
-    
-    # Keep only last 100 logs
+    st.session_state.logs.append(f"[{timestamp}] {msg}")
     if len(st.session_state.logs) > 100:
         st.session_state.logs = st.session_state.logs[-100:]
-    if (automation_state and len(automation_state.logs) > 100):
-        automation_state.logs = automation_state.logs[-100:]
 
-def find_message_input(driver, process_id="AUTO", automation_state=None):
-    """Full original message input finder - 1700 lines logic preserved"""
-    log_message(f'{process_id}: 🔍 Finding message input...', automation_state)
-    time.sleep(3)
-    
-    try:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(1)
-        driver.execute_script("window.scrollTo(0, 0);")
-        time.sleep(1)
-    except:
-        pass
-    
-    message_input_selectors = [
+def find_input(driver):
+    selectors = [
         'div[contenteditable="true"][role="textbox"]',
-        'div[contenteditable="true"][data-lexical-editor="true"]',
-        'div[aria-label*="message" i][contenteditable="true"]',
-        'div[aria-label*="Message" i][contenteditable="true"]',
-        'div[contenteditable="true"][spellcheck="true"]',
-        '[role="textbox"][contenteditable="true"]',
-        'textarea[placeholder*="message" i]',
-        'div[aria-placeholder*="message" i]',
-        'div[data-placeholder*="message" i]',
-        '[contenteditable="true"]',
+        'div[contenteditable="true"]',
         'textarea',
         'input[type="text"]'
     ]
-    
-    log_message(f'{process_id}: Trying {len(message_input_selectors)} selectors...', automation_state)
-    
-    for idx, selector in enumerate(message_input_selectors):
+    for sel in selectors:
         try:
-            elements = driver.find_elements(By.CSS_SELECTOR, selector)
-            log_message(f'{process_id}: Selector #{idx+1}: Found {len(elements)} elements', automation_state)
-            
-            for element in elements:
-                try:
-                    is_editable = driver.execute_script("""
-                        return arguments[0].contentEditable === 'true' || 
-                               arguments[0].tagName === 'TEXTAREA' || 
-                               arguments[0].tagName === 'INPUT';
-                    """, element)
-                    
-                    if is_editable:
-                        element_text = driver.execute_script("""
-                            return arguments[0].placeholder || 
-                                   arguments[0].getAttribute('aria-label') || 
-                                   arguments[0].getAttribute('aria-placeholder') || '';
-                        """, element).lower()
-                        
-                        keywords = ['message', 'write', 'type', 'send', 'chat', 'msg', 'reply', 'text']
-                        if any(keyword in element_text for keyword in keywords):
-                            log_message(f'{process_id}: ✅ PERFECT message input found!', automation_state)
-                            return element
-                        elif idx < 5:
-                            log_message(f'{process_id}: ✅ Good editable input found', automation_state)
-                            return element
-                            
-                except Exception as e:
-                    continue
-        except Exception as e:
+            elements = driver.find_elements(By.CSS_SELECTOR, sel)
+            for el in elements:
+                if driver.execute_script("return arguments[0].contentEditable === 'true' || arguments[0].tagName === 'TEXTAREA'", el):
+                    return el
+        except:
             continue
-    
-    log_message(f'{process_id}: ❌ No message input found after all selectors', automation_state)
     return None
 
-def setup_browser(automation_state=None):
-    """Full original browser setup"""
-    log_message('🔧 Setting up Chrome browser...', automation_state)
-    
-    chrome_options = Options()
-    chrome_options.add_argument('--headless=new')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-setuid-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36')
-    
-    # Try to find chromium/chrome
-    chromium_paths = ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/chrome']
-    for path in chromium_paths:
-        if Path(path).exists():
-            chrome_options.binary_location = path
-            log_message(f'Found browser at: {path}', automation_state)
-            break
-    
+def load_cookies_from_file(uploaded_file):
+    """Load cookies from uploaded txt file"""
     try:
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.set_window_size(1920, 1080)
-        log_message('✅ Chrome browser ready!', automation_state)
-        return driver
+        content = uploaded_file.read().decode('utf-8')
+        cookies = content.strip()
+        return cookies
     except Exception as e:
-        log_message(f'❌ Browser setup failed: {str(e)}', automation_state)
-        raise
+        log(f"❌ Cookie file error: {str(e)}")
+        return ""
 
-def get_next_message(messages, automation_state=None):
-    """Message rotation logic"""
-    if not messages:
-        return "Hello!"
-    if automation_state:
-        idx = automation_state.message_rotation_index % len(messages)
-        automation_state.message_rotation_index += 1
-        return messages[idx]
-    return messages[0]
-
-def send_messages_loop():
-    """Main sending loop - continuous until STOP"""
-    driver = None
-    automation_state = st.session_state.automation_state
+def worker():
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
     
+    driver = webdriver.Chrome(options=options)
     try:
-        log_message("🚀 Starting FULL automation...", automation_state)
-        driver = setup_browser(automation_state)
+        driver.get('https://www.facebook.com/')
+        time.sleep(5)
         
-        # Add all cookies
-        if st.session_state.cookies.strip():
-            log_message("🔑 Adding cookies...", automation_state)
-            for cookie_line in st.session_state.cookies.split('\n'):
+        # Add cookies
+        cookies_text = st.session_state.cookies.strip()
+        if cookies_text:
+            log("🔑 Loading cookies...")
+            for cookie_line in cookies_text.split('\n'):
                 cookie_line = cookie_line.strip()
-                if '=' in cookie_line:
+                if '=' in cookie_line and cookie_line:
                     name, value = cookie_line.split('=', 1)
                     try:
                         driver.add_cookie({
-                            'name': name.strip(),
-                            'value': value.strip(),
-                            'domain': '.facebook.com',
-                            'path': '/'
+                            'name': name.strip(), 
+                            'value': value.strip(), 
+                            'domain': '.facebook.com'
                         })
                     except:
                         pass
         
-        total_sent = 0
-        
-        while automation_state.running:
-            # Loop through all chat IDs
+        total = 0
+        while st.session_state.running:
             for chat_id in st.session_state.chat_ids:
-                if not automation_state.running:
+                if not st.session_state.running:
                     break
                 
-                log_message(f"📱 Opening chat: {chat_id[:20]}...", automation_state)
-                try:
-                    driver.get(f'https://www.facebook.com/messages/t/{chat_id}')
-                    time.sleep(8)
-                    
-                    message_input = find_message_input(driver, f"CHAT-{chat_id[:8]}", automation_state)
-                    if not message_input:
-                        log_message(f"❌ No input found for {chat_id[:15]}", automation_state)
-                        continue
-                    
-                    # Send messages continuously
-                    for i in range(10):  # Send 10 messages per chat then rotate
-                        if not automation_state.running:
-                            break
-                        
-                        msg = get_next_message(st.session_state.messages, automation_state)
-                        full_msg = f"{st.session_state.prefix} {msg}".strip() if st.session_state.prefix else msg
-                        
-                        try:
-                            # Type message
-                            driver.execute_script("""
-                                const el = arguments[0];
-                                const msg = arguments[1];
-                                el.scrollIntoView({behavior: 'smooth', block: 'center'});
-                                el.focus();
-                                el.click();
-                                if (el.tagName === 'DIV') {
-                                    el.textContent = msg;
-                                    el.innerHTML = msg;
-                                } else {
-                                    el.value = msg;
-                                }
-                                el.dispatchEvent(new Event('input', {bubbles: true}));
-                                el.dispatchEvent(new Event('change', {bubbles: true}));
-                            """, message_input, full_msg)
-                            
-                            time.sleep(1.5)
-                            
-                            # Try send button first
-                            sent = driver.execute_script("""
-                                const buttons = document.querySelectorAll('[aria-label*="Send" i]:not([aria-label*="like" i]), [data-testid="send-button"]');
-                                for (let btn of buttons) {
-                                    if (btn.offsetParent !== null) {
-                                        btn.click();
-                                        return 'button';
-                                    }
-                                }
-                                return 'enter';
-                            """)
-                            
-                            if sent == 'enter':
-                                # Use Enter key
-                                driver.execute_script("""
-                                    const el = arguments[0];
-                                    el.focus();
-                                    const events = [
-                                        new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}),
-                                        new KeyboardEvent('keypress', {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}),
-                                        new KeyboardEvent('keyup', {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true})
-                                    ];
-                                    events.forEach(e => el.dispatchEvent(e));
-                                """, message_input)
-                            
-                            total_sent += 1
-                            automation_state.message_count = total_sent
-                            st.session_state.message_count = total_sent
-                            log_message(f"✅ SENT #{total_sent}: {full_msg[:40]}... | Delay: {st.session_state.delay}s", automation_state)
-                            time.sleep(st.session_state.delay)
-                            
-                        except Exception as e:
-                            log_message(f"⚠️ Send error: {str(e)[:50]}", automation_state)
-                            time.sleep(3)
+                log(f"📱 Chat: {chat_id[:15]}...")
+                driver.get(f'https://www.facebook.com/messages/t/{chat_id}')
+                time.sleep(8)
                 
-                except Exception as e:
-                    log_message(f"❌ Chat error {chat_id[:15]}: {str(e)[:50]}", automation_state)
-                    time.sleep(5)
-            
-            if st.session_state.chat_ids:
-                log_message("🔄 Rotating through chats again...", automation_state)
-            time.sleep(2)
-            
+                inp = find_input(driver)
+                if not inp:
+                    log("❌ Message input not found")
+                    continue
+                
+                for msg in st.session_state.messages:
+                    if not st.session_state.running:
+                        break
+                    
+                    full_msg = f"{st.session_state.prefix} {msg}".strip() if st.session_state.prefix else msg
+                    
+                    # Type message
+                    driver.execute_script("""
+                        arguments[0].focus();
+                        arguments[0].textContent = arguments[1];
+                        arguments[0].dispatchEvent(new Event('input', {bubbles: true}));
+                    """, inp, full_msg)
+                    
+                    time.sleep(1)
+                    
+                    # Send with Enter
+                    driver.execute_script("""
+                        arguments[0].dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
+                        arguments[0].dispatchEvent(new KeyboardEvent('keyup', {key: 'Enter', bubbles: true}));
+                    """, inp)
+                    
+                    total += 1
+                    st.session_state.count = total
+                    log(f"✅ Sent: {full_msg[:30]}... (Total: {total})")
+                    time.sleep(st.session_state.delay)
+                
     except Exception as e:
-        log_message(f"💥 FATAL ERROR: {str(e)}", automation_state)
+        log(f"❌ Error: {str(e)[:50]}")
     finally:
-        if driver:
-            try:
-                driver.quit()
-                log_message("🔒 Browser closed", automation_state)
-            except:
-                pass
-        automation_state.running = False
-        st.session_state.automation_running = False
+        driver.quit()
+        log("🔒 Browser closed")
 
-def start_automation():
-    """Start button handler"""
-    if not st.session_state.chat_ids:
-        st.error("⚠️ Please add Chat IDs first!")
-        return
-    
-    if not st.session_state.messages:
-        st.session_state.messages = ["Hello!"]
-    
-    st.session_state.automation_state.running = True
-    st.session_state.automation_running = True
-    st.session_state.automation_state.message_count = 0
-    st.session_state.message_count = 0
-    st.session_state.logs = []
-    st.session_state.automation_state.logs = []
-    
-    # Start in background thread
-    thread = threading.Thread(target=send_messages_loop, daemon=True)
-    thread.start()
-    
-    log_message("🚀🚀 MESSAGING STARTED - Continuous mode ON!", st.session_state.automation_state)
-    st.success("✅ Automation STARTED!")
+def start():
+    if st.session_state.chat_ids and st.session_state.messages:
+        st.session_state.running = True
+        st.session_state.count = 0
+        st.session_state.logs = []
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+        log("🚀 STARTED!")
+    else:
+        st.error("⚠️ Add Chat IDs & Messages first!")
 
-def stop_automation():
-    """Stop button handler"""
-    st.session_state.automation_state.running = False
-    st.session_state.automation_running = False
-    log_message("⏹️⏹️ ALL MESSAGING STOPPED!", st.session_state.automation_state)
-    st.warning("✅ Automation STOPPED!")
+def stop():
+    st.session_state.running = False
+    log("⏹️ STOPPED!")
 
-# MAIN UI LAYOUT - Exact screenshot match
+# Header - NO ICON/LOGO
 st.markdown("""
 <div class="main-header">
-    <h1>✨ YK TRICKS INDIA ✨</h1>
-    <p>Select Messenger Auto Tool</p>
+    <h1>YK TRICKS INDIA</h1>
+    <p>Messenger Auto Tool</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Input columns
+# Main Layout
 col1, col2 = st.columns(2)
 
 with col1:
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
-    st.markdown('<h3 class="section-title">🔑 Enter Cookies</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 class="section-title">🔑 Cookies</h3>', unsafe_allow_html=True)
     
-    # Cookies textarea
-    st.session_state.cookies = st.text_area(
-        "Single/Multiple Cookies (one per line)",
-        height=120,
-        placeholder="c_user=1000...; xs=...; fr=... (Paste all cookies one per line)",
-        key="cookies_input"
-    )
+    # COOKIE TABS - Single vs Multiple File
+    cookie_tabs = st.tabs(["Single Cookie", "Multiple Cookies (TXT)"], key="cookie_tabs")
+    
+    with cookie_tabs[0]:  # Single Cookie
+        st.session_state.cookies = st.text_area(
+            "Paste Single Cookie String",
+            height=100,
+            placeholder="c_user=1000...; xs=...; fr=... (Full cookie string)",
+            key="single_cookie"
+        )
+    
+    with cookie_tabs[1]:  # Multiple Cookies File
+        uploaded_file = st.file_uploader(
+            "📤 Upload cookie.txt (one cookie per line)", 
+            type=['txt'],
+            key="cookie_file"
+        )
+        if uploaded_file is not None:
+            cookies_content = load_cookies_from_file(uploaded_file)
+            st.text_area(
+                "Loaded Cookies",
+                value=cookies_content,
+                height=100,
+                key="multiple_cookie_display"
+            )
+            st.session_state.cookies = cookies_content
     
     st.markdown('<h3 class="section-title">📱 Chat ID / E2EE / Inbox</h3>', unsafe_allow_html=True)
-    
-    # Chat IDs textarea
     chat_input = st.text_area(
         "Enter Chat IDs (one per line)",
-        height=120,
-        placeholder="1362400298935018\n100036283209197\nE2EE_thread_id_here",
-        key="chat_ids_input"
+        height=100,
+        placeholder="1362400298935018\n100036283209197",
+        key="chat_input"
     )
-    st.session_state.chat_ids = [id.strip() for id in chat_input.split('\n') if id.strip()]
+    st.session_state.chat_ids = [x.strip() for x in chat_input.split('\n') if x.strip()]
     
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="input-section">', unsafe_allow_html=True)
-    st.markdown('<h3 class="section-title">💬 Upload Message File</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 class="section-title">💬 Messages</h3>', unsafe_allow_html=True)
     
-    # File uploader
-    uploaded_file = st.file_uploader("📤 Choose TXT file", type=['txt'], key="file_uploader")
-    
-    if uploaded_file is not None:
-        try:
-            content = uploaded_file.read().decode('utf-8')
-            messages_list = [msg.strip() for msg in content.split('\n') if msg.strip()]
-            st.session_state.messages = messages_list
-            st.success(f"✅ Loaded {len(messages_list)} messages from file!")
-        except:
-            st.session_state.messages = ["Message file error - using default"]
+    # Message file upload
+    msg_file = st.file_uploader("📤 Upload Message TXT", type=['txt'], key="msg_file")
+    if msg_file:
+        msg_content = msg_file.read().decode('utf-8')
+        st.session_state.messages = [x.strip() for x in msg_content.split('\n') if x.strip()]
+        st.success(f"✅ Loaded {len(st.session_state.messages)} messages")
     else:
         msg_input = st.text_area(
-            "Or type messages (one per line)",
-            height=140,
-            placeholder="Hello!\nHow are you?\nGood day!\nTesting message",
-            key="manual_messages"
+            "Enter Messages (one per line)",
+            height=120,
+            placeholder="Hello!\nHow are you?\nGood morning!",
+            key="msg_input"
         )
-        st.session_state.messages = [msg.strip() for msg in msg_input.split('\n') if msg.strip()]
+        st.session_state.messages = [x.strip() for x in msg_input.split('\n') if x.strip()]
     
-    # Prefix
     st.markdown('<h3 class="section-title">👤 Prefix</h3>', unsafe_allow_html=True)
-    st.session_state.prefix = st.text_input(
-        "Name Prefix (optional)",
-        placeholder="YKTI RAWAT",
-        key="prefix_input"
-    )
+    st.session_state.prefix = st.text_input("Name Prefix", placeholder="YKTI RAWAT", key="prefix")
     
-    # Delay
     st.markdown('<h3 class="section-title">⏱️ Delay</h3>', unsafe_allow_html=True)
-    st.session_state.delay = st.number_input(
-        "Delay (in seconds)",
-        min_value=1,
-        max_value=300,
-        value=5,
-        key="delay_input"
-    )
+    st.session_state.delay = st.number_input("Delay (seconds)", min_value=1, max_value=300, value=5, key="delay")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Metrics row
+# Metrics
 col1, col2, col3 = st.columns(3)
-
 with col1:
     st.markdown(f"""
     <div class="metric-container">
-        <h3>📨 Messages Sent</h3>
-        <h1 style="font-size: 3rem; margin: 0; font-weight: 900;">
-            {st.session_state.message_count}
-        </h1>
+        <h3>📨 Messages</h3>
+        <h1 style="font-size: 2.5rem;">{st.session_state.count}</h1>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    status = "🟢 RUNNING" if st.session_state.automation_running else "🔴 STOPPED"
+    status = "🟢 LIVE" if st.session_state.running else "🔴 STOPPED"
     st.markdown(f"""
     <div class="metric-container">
         <h3>⚙️ Status</h3>
-        <h1 style="font-size: 2.5rem; margin: 0;">{status}</h1>
+        <h1 style="font-size: 2rem;">{status}</h1>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    chat_count = len(st.session_state.chat_ids)
     st.markdown(f"""
     <div class="metric-container">
-        <h3>📱 Active Chats</h3>
-        <h1 style="font-size: 2.5rem; margin: 0;">{chat_count}</h1>
+        <h3>📱 Chats</h3>
+        <h1 style="font-size: 2rem;">{len(st.session_state.chat_ids)}</h1>
     </div>
     """, unsafe_allow_html=True)
 
-# Control buttons - SMALLER and LOWER POSITION
+# Control Buttons - Small & Lower
 st.markdown('<div style="margin-top: 2rem; padding: 2rem; text-align: center;">', unsafe_allow_html=True)
-
 col_btn1, col_btn2 = st.columns(2)
 
 with col_btn1:
-    if st.button(
-        "🚀 START MESSAGING", 
-        key="start_btn",
-        disabled=st.session_state.automation_running,
-        help="Click to start continuous messaging"
-    ):
-        start_automation()
+    if st.button("🚀 START MESSAGING", key="start", disabled=st.session_state.running, use_container_width=True):
+        start()
 
 with col_btn2:
-    if st.button(
-        "⏹️ STOP MESSAGING", 
-        key="stop_btn", 
-        disabled=not st.session_state.automation_running,
-        help="Click to stop all messaging"
-    ):
-        stop_automation()
+    if st.button("⏹️ STOP MESSAGING", key="stop", disabled=not st.session_state.running, use_container_width=True):
+        stop()
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Live Logs Section
+# Live Logs
 st.markdown('<div class="input-section">', unsafe_allow_html=True)
 st.markdown('<h3 class="section-title">📊 LIVE LOGS</h3>', unsafe_allow_html=True)
 
 logs_html = '<div class="logs-container">'
 for log in st.session_state.logs[-25:]:
-    logs_html += f'<div style="margin-bottom: 4px;">{log}</div>'
+    logs_html += f'<div>{log}</div>'
 logs_html += '</div>'
-
 st.markdown(logs_html, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Auto refresh when running
-if st.session_state.automation_running:
+# Auto refresh
+if st.session_state.running:
     time.sleep(2)
     st.rerun()
-
-# Footer
-st.markdown("""
-<div style="
-    text-align: center; 
-    padding: 2rem; 
-    color: rgba(255,255,255,0.8); 
-    font-size: 0.9rem;
-    margin-top: 2rem;
-">
-    ✨ YK TRICKS INDIA © 2026 | All Rights Reserved ✨
-</div>
-""", unsafe_allow_html=True)
